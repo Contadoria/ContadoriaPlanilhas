@@ -1,0 +1,101 @@
+<script>
+
+new Vue({
+    el: '#app',
+    store,
+    template: `
+        <v-app class="grey lighten-4">
+            <v-snackbar bottom left dark :color="corAviso" v-model="mostrarAviso">
+                {{ mensagemAviso }}
+            </v-snackbar>
+            <v-container v-if="mostrarInicializacao" style="display: flex; justify-content: center; align-items: center;">
+                <v-progress-circular indeterminate :size="50" class="primary--text"></v-progress-circular>
+            </v-container>
+            <v-container v-else-if="mostrarPaginaErro">
+                <ui-info type="error" theme="green" :title="document.title" subtitle="Ocorreu uma falha na comunicação com o servidor. :-(">
+                    <p class="text-xs-center body-2">
+                        Tente recarregar a página ou faça uma cópia das planilhas diretamente na pasta <a target="_blank" :href="urlDistribuicao">Distribuição</a>
+                    </p>
+                </ui-info>
+            </v-container>
+            <div v-else>
+                <v-toolbar class="green" fixed>
+                    <ui-logo></ui-logo>
+                    <v-spacer></v-spacer>
+                    <h2 class="white--text">
+                        Criar Planilhas
+                    </h2>
+                    <v-menu offset-y left bottom>                    
+                        <v-btn icon slot="activator" dark>
+                            <v-icon>more_vert</v-icon>
+                        </v-btn>
+                        <v-list>
+                            <v-list-tile avatar @click="abrirAjuda()">
+                                <v-list-tile-avatar><v-icon>help</v-icon></v-list-tile-avatar>
+                                <v-list-tile-title>Obter ajuda</v-list-tile-title>
+                            </v-list-tile>
+                            <v-list-tile avatar @click="abrirIssues()">
+                                <v-list-tile-avatar><v-icon>bug_report</v-icon></v-list-tile-avatar>
+                                <v-list-tile-title>Reportar um bug</v-list-tile-title>
+                            </v-list-tile>
+                        </v-list>
+                    </v-menu>
+                </v-toolbar>
+                <v-content fluid style="padding-top: 70px">
+                    <v-layout row wrap>
+                        <v-flex xs12 sm12 md6 lg6 xl6>
+                            <ui-pasta-distribuicao></ui-pasta-distribuicao>
+                        </v-flex>
+                        <v-flex xs12 sm12 md6 lg6 xl6>
+                            <ui-form></ui-form>
+                        </v-flex>
+                    </v-layout>
+                </v-content>
+            </div>
+        </v-app>
+    `,
+    computed: {
+        inicializando() {
+            return this.$store.state.inicializando;
+        },
+        carregando() {
+            return this.$store.state.carregando;
+        },
+        mostrarAviso: {
+            get() {
+                return this.$store.state.mostrarAviso;
+            },
+            set(val) {
+                this.$store.commit('atualizarVisualizacaoAviso', val);
+            }
+        },
+        mensagemAviso() {
+            return this.$store.state.mensagemAviso;
+        },
+        corAviso() {
+            return this.$store.state.corAviso;
+        },
+        mostrarInicializacao() {
+            return this.$store.state.inicializando;
+        },
+        mostrarPaginaErro() {
+            return this.$store.state.falhaInicializacao;
+        },
+        urlDistribuicao() {
+            return this.$store.state.urlDistribuicao || 'https:\/\/drive.google.com\/drive\/folders\/0B2B1B7RRK5HmS0I2clRTTTJiMXc';
+        },
+    },
+    methods: {
+        abrirAjuda() {
+            window.open('https:\/\/contadoria.github.io\/Tutoriais\/', '_blank');
+        },
+        abrirIssues() {
+            window.open('https:\/\/script.google.com\/macros\/s\/AKfycbwMQVo2G0pvhvq-aadi9LOK8UUYn2eK-36nz7jZVyqTcZ06Ncc\/exec', '_blank');
+        }
+    },
+    mounted() {
+        this.$store.dispatch('inicializar', this.$dadosPasta);
+    }
+});
+
+</script>

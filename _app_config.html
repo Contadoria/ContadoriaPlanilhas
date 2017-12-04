@@ -1,0 +1,211 @@
+<script>
+
+/*
+* Página de configurações, carrega antes de todas as demais
+**/
+
+/*
+* Sempre alterar para false quando for publicar
+**/
+const MODO_DESENVOLVIMENTO = false;
+
+/*
+* Disponibiliza o objeto global da
+* API do Google para uso interno
+* nos componentes como 'this.$google'
+**/
+Vue.prototype.$google = google;
+
+/*
+* Disponibiliza os dados do serviço para os componentes
+**/
+Vue.prototype.$dadosPasta = {
+    id: idPasta,
+    nome: nomePasta
+};
+
+/*
+* Log para depuração 
+**/
+Vue.prototype.$log = function(payload) {
+    if (MODO_DESENVOLVIMENTO) {
+        console.log('*** DEBUG_LOG');
+        console.log(payload);
+    }
+};
+
+/*
+* Define a rotina de tratamento de erros
+* para todos os componentes
+**/
+Vue.prototype.$errorHandler = function (e) {
+    google.script.run.registrarErro(e);
+};
+
+/*
+* Inicia a Vuex store
+**/
+
+Vue.use(Vuex);
+
+const store = new Vuex.Store({
+    strict: MODO_DESENVOLVIMENTO,
+    state: {
+        inicializando: true,
+        falhaInicializacao: false,
+        carregando: false,
+        mostrarAviso: false,
+        mensagemAviso: '',
+        corAviso: '',
+        urlDistribuicao: null,
+        idPasta: '',
+        nomePasta: '',
+        planilhas: [],
+        ativa: -1,
+        identificador: '',
+        opcaoAbrir: true
+    },
+    mutations: {
+        atualizarStatusInicializacao(state, status) {
+            state.inicializando = status;
+        },
+        atualizarFalhaInicializacao(state, status) {
+            state.falhaInicializacao = status;
+        },
+        atualizarStatusCarregando(state, status) {
+            state.carregando = status;
+        },
+        atualizarAviso(state, payload) {
+            state.mostrarAviso = payload.mostrarAviso;
+            state.mensagemAviso = payload.mensagemAviso;
+            state.corAviso = payload.corAviso;
+        },
+        atualizarVisualizacaoAviso(state, val) {
+            state.mostrarAviso = val;
+        },
+        atualizarUrlDistribuicao(state, url) {
+            state.urlDistribuicao = url;
+        },
+        atualizarIdPasta(state, id) {
+            state.idPasta = id;
+        },
+        atualizarNomePasta(state, nome) {
+            state.nomePasta = nome;
+        },
+        atualizarPlanilhas(state, dados) {
+            state.planilhas = Array.isArray(dados) ? dados : []; 
+        },
+        selecionarPlanilha(state, dados) {
+            state.planilhas.forEach(function(planilha, idx) {
+                if (idx === dados.index) {
+                    state.ativa = (state.ativa === idx) ? -1 : idx;  
+                    planilha.selected = !planilha.selected;
+                } else {
+                    if (!dados.event.ctrlKey && !dados.event.metaKey && !dados.event.shiftKey) {
+                        planilha.selected = false;
+                    } else {
+                        if (dados.event.shiftKey === true) {
+                            planilha.selected = (idx < dados.index);
+                        }
+                    }
+                }
+            });
+        },
+        selecionarPlanilhaComSetas(state, dados) {
+        
+            var key = event.keyCode;
+            
+            if (key === 37 || key === 39) {
+            
+                var proxima = (key === 39) ? Math.min(state.planilhas.length - 1, dados.index + 1) : Math.max(0, dados.index - 1);
+                var proximaSelecionada = state.planilhas[proxima].selected;
+                
+                document.getElementById('plan' + proxima).focus();
+                
+                state.planilhas.forEach(function(planilha, idx) {
+                    
+                    if (!dados.event.ctrlKey && !dados.event.metaKey && !dados.event.shiftKey) {
+                    
+                        planilha.selected = (idx === proxima);
+
+                    } else {
+                    
+                        if (idx === proxima) {
+                            
+                            planilha.selected = true;
+                            
+                        } else {
+                            
+                            if (idx === dados.index) {
+                                planilha.selected = !proximaSelecionada;
+                            }
+                        }
+                    }
+                });
+            }
+        },
+        cancelarSelecao(state) {
+            state.planilhas.forEach(function(planilha, idx) {
+                planilha.selected = false;
+            });
+        },
+        atualizarIdentificador(state, identificador) {
+            state.identificador = identificador;
+        },
+        atualizarOpcaoAbrir(state, opcao) {
+            state.opcaoAbrir = opcao;
+        }
+    },
+    actions: {
+        inicializar(context, dadosPasta) {
+            context.commit('atualizarIdPasta', dadosPasta.id);
+            context.commit('atualizarNomePasta', dadosPasta.nome);
+            google.script.run
+            .withSuccessHandler(function(dados) {
+                context.commit('atualizarUrlDistribuicao', dados.urlDistribuicao);
+                context.commit('atualizarPlanilhas', dados.planilhas);
+                context.commit('atualizarStatusInicializacao', false);
+            })
+            .withFailureHandler(function(err) {
+                context.commit('atualizarStatusInicializacao', false);
+                context.commit('atualizarFalhaInicializacao', true);
+            })
+            .obterDadosPastaDistribuicao();
+        },
+        criarPlanilhas(context, selecionadas) {
+            context.commit('atualizarStatusCarregando', true);
+            var dados = {
+                identificador: context.state.identificador,
+                planilhas: selecionadas,
+                idPasta: context.state.idPasta
+            };
+            google.script.run
+            .withSuccessHandler(function(urls) {
+                var payload = {
+                    mostrarAviso: true,
+                    mensagemAviso: (urls.length === 1) ? 'Planilha criada com sucesso' : 'Planilhas criadas com sucesso',
+                    corAviso: '#333'
+                }
+                if (context.state.opcaoAbrir === true) {
+                    urls.forEach(function(url) {
+                        window.open(url, '_blank');
+                    });
+                }
+                context.commit('atualizarStatusCarregando', false);
+                context.commit('atualizarAviso', payload);
+            })
+            .withFailureHandler(function(err) {
+                var payload = {
+                    mostrarAviso: true,
+                    mensagemAviso: 'Falha ao copiar as planilhas',
+                    corAviso: 'red'
+                }
+                context.commit('atualizarStatusCarregando', false);
+                context.commit('atualizarAviso', payload);
+            })
+            .criarPlanilhas(dados);
+        }
+    }
+});
+
+</script>

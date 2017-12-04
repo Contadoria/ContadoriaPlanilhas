@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <base target="_top">
+        <title><?!= Config_.UI.TITULO; ?></title>
+        <?!= incluir('_app_styles'); ?>
+    </head>
+    <body>
+    
+        <div id="app"></div>
+
+        <?!= incluir('_app_scripts'); ?>
+        <?!= incluir('_app_components_common'); ?>
+        <?!= incluir('_app_components'); ?>
+        <script>
+            new Vue({
+            el: '#app',
+            template: `
+                <v-app class="grey lighten-4">
+                    <main>
+                        <v-container>
+                             <ui-info type="success"
+                                 theme="green"
+                                 :title="document.title"
+                                 subtitle="Aplicativo instalado com sucesso! :-)">
+                                 <p class="text-xs-center subheading">
+                                     Agora você pode utilizá-lo normalmente no <a style="color: blue;" target="_blank" href="https://drive.google.com">Google Drive</a>.
+                                 </p>
+                                     <div style="margin: 30px auto 15px auto; display: flex; justify-content: center;">
+                                         <v-btn raised large class="mr-3 grey lighten-3" @click.native="top.window.close()">Fechar</v-btn>
+                                     </div>
+                             </ui-info>
+                        </v-container>
+                    </main>
+                </v-app>
+            `,
+            });
+        </script>        
+    </body>
+</html>

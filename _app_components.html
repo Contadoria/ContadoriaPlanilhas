@@ -1,0 +1,165 @@
+<script>
+
+Vue.component('ui-pasta-distribuicao', {
+    template: `
+        <v-card raised class="ma-3 pa-0">
+            <v-system-bar window dark>
+                <ui-google-drive-logo class="mt-2 mr-2"></ui-google-drive-logo>
+                <span class="white--text">Pasta Distribuição<span>
+            </v-system-bar>
+            <v-layout row wrap justify-space-between class="ma-0 pl-3 pr-3 pb-3">
+                <div v-for="(planilha, index) in planilhas" :key="planilha.id">
+                    <ui-file-thumbnail 
+                        :name="planilha.name"
+                        :id="'plan' + index"
+                        :tabindex="index"
+                        :selected="planilha.selected"
+                        :thumbnailUrl="planilha.thumbnail"
+                        :iconUrl="planilha.iconLink"
+                        @click="selecionar(index, $event)"
+                        @keyup="selecionarComSetas(index, $event)">
+                    </ui-file-thumbnail>
+                </div>
+            </v-layout>
+            <v-card-text v-else>
+                <p class="ma-1 pa-1 grey--text">Nenhuma planilha selecionada</p>
+            </v-card-text>
+        </v-card>
+    `,
+    computed: {
+        planilhas() {
+            return this.$store.state.planilhas;
+        },
+        selecionadas() {
+            return this.$store.state.planilhas.filter(item => item.selected);
+        },
+        ativa() {
+            return this.$store.state.ativa;
+        },
+    },
+    methods: {
+        selecionar(index, event) {
+            this.$store.commit('selecionarPlanilha', { index: index, event: event });
+        },
+        selecionarComSetas(index, event) {
+            this.$store.commit('selecionarPlanilhaComSetas', { index: index, event: event });
+        }
+    }
+});
+
+Vue.component('ui-form', {
+    template: `
+        <v-form ref="form" v-model="valid">
+            <v-card raised class="ma-3 pa-0">
+                <v-toolbar color="grey darken-2" dark dense>
+                    <v-toolbar-title>
+                        Dados para criação das planilhas
+                    </v-toolbar-title>
+                </v-toolbar>
+                <v-layout row class="ma-0 pa-0">
+                    <v-flex class="ml-4 mr-4 mt-4 pa-0">
+                        <v-text-field
+                            label="Identificador"
+                            v-model.trim="identificador"
+                            :rules="[rules.required, rules.maxChars, rules.fileName]"
+                            :counter="30"
+                            prepend-icon="fingerprint"
+                            required
+                            @keydown.native.enter.prevent="x => false"
+                            @keyup.native.enter.prevent="x => false">
+                        </v-text-field>
+                    </v-flex>
+                </v-layout>
+                <v-layout row class="ma-0 pa-0">
+                    <v-flex class="ma-0 pa-0">
+                        <v-switch class="ml-4" color="blue darken-1" label="Abrir automaticamente" v-model="opcaoAbrir"></v-switch>
+                    </v-flex>
+                </v-layout>
+                <v-card-actions>
+                    <v-spacer></v-spacer>
+					<v-btn
+						flat
+                        class="ma-2"
+                        :disabled="carregando"
+                        @click.native="limpar()">
+                        Limpar
+                        <v-icon right dark>delete</v-icon>
+					</v-btn>
+                    <v-btn
+                        flat
+                        class="ma-2"
+                        :class="{ 'blue--text darken-1': ready, 'red--text': !ready }"
+                        :loading="carregando"
+                        :disabled="carregando"
+                        @click.native="criar()">
+                        Criar
+                        <v-icon right>library_add</v-icon>
+                    </v-btn>
+                </v-card-actions>
+            </v-card>
+        </v-form>
+        `,
+    data() {
+        return {
+            valid: false,
+            rules: {
+                required: (v) => !!v || 'Você deve informar um nome de arquivo',
+                fileName: (v) => {
+                    const pattern1 = /^(\w)$/
+                    const pattern2 = /^(\w+[\w*,\s,\.,\-]*[\w,\s]+)$/
+                    return pattern1.test(v) || pattern2.test(v) || 'Você deve iniciar e terminar com letras, números e/ou underline. Use espaços, traços e pontos somente no meio, não nos extremos.'
+                },
+                maxChars: (v) => v.length <= 30 || 'O nome do arquivo deve conter no máximo 30 caracteres',
+            }
+        }
+    },
+    computed: {
+        carregando() {
+            return this.$store.state.carregando;
+        },
+        planilhas() {
+            return this.$store.state.planilhas;
+        },
+        selecionadas() {
+            return this.$store.state.planilhas.filter(item => item.selected);
+        },
+        ativa() {
+            return this.$store.state.ativa;
+        },
+        identificador: {
+            get() {
+                return this.$store.state.identificador;
+            },
+            set(val) {
+                this.$store.commit('atualizarIdentificador', val);
+            }
+        },
+        opcaoAbrir: {
+            get() {
+                return this.$store.state.opcaoAbrir;
+            },
+            set(val) {
+                this.$store.commit('atualizarOpcaoAbrir', val);
+            }
+        },
+        ready() {
+            return this.valid && this.selecionadas.length > 0;
+        }
+    },
+    methods: {
+        criar() {
+            if (this.ready) {
+                this.$store.commit('atualizarOpcaoAbrir', this.opcaoAbrir)
+                this.$store.commit('atualizarIdentificador', this.identificador)
+                this.$store.dispatch('criarPlanilhas', this.selecionadas);
+            }        
+        },
+        limpar() {
+            this.$refs.form.reset();
+            this.opcaoAbrir = true;
+            this.$store.commit('cancelarSelecao');
+        }
+    }
+});
+
+</script>

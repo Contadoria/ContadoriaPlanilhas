@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <base target="_top">
+        <title><?!= Config_.UI.TITULO; ?></title>
+        <?!= incluir('_app_styles'); ?>
+        <script>
+            <? if (authUrl !== null && authUrl !== undefined) { ?>
+                var authUrl = '<?= authUrl ?>';
+            <? } else { ?>
+                var authUrl = null;
+            <? } ?>
+        </script>
+    </head>
+    <body>
+    
+        <div id="app"></div>
+
+        <?!= incluir('_app_scripts'); ?>
+        <?!= incluir('_app_components_common'); ?>
+        <?!= incluir('_app_components'); ?>
+        <script>
+        new Vue({
+            el: '#app',
+            template: `
+                <v-app class="grey lighten-4">
+                    <main>
+                        <v-container v-if="!instalando">
+                             <ui-info type="info"
+                                 theme="green"
+                                 :title="document.title"
+                                 subtitle="Criação de planilhas de cálculo diretamente no Google Drive.">
+                                 <div style="margin-left: 5%; margin-right: 5%; padding: 20px;">
+                                     <p class="text-xs-left subheading">
+                                         Instalando este aplicativo, você poderá criar planilhas de cálculo diretamente na pasta de destino do seu <strong>Drive</strong>, sem necessidade de abrir a pasta <strong>Distribuição</strong>.
+                                     </p>
+                                     <p class="text-xs-left subheading">
+                                         Antes de instalar, você deve aceitar nossos <a style="color: blue;" target="_blank" href="https://contadoria.github.io/uso">termos de uso</a>.
+                                     </p>
+                                     <v-checkbox color="info" label="Li e aceito os termos de uso." v-model="termosDeUsoAceitos"></v-checkbox>
+                                     <div style="display: flex; justify-content: center;">
+                                         <v-btn raised large color="primary" :disabled="!termosDeUsoAceitos" @click.native="instalar()">Instalar</v-btn>
+                                     </div>
+                                 </div>
+                             </ui-info>
+                        </v-container>
+                        <v-container v-else>
+                             <ui-info theme="green" type="info" :title="document.title" subtitle="Você já pode fechar esta janela."></ui-info>
+                        </v-container>
+                    </main>
+                </v-app>
+            `,
+            data: {
+                termosDeUsoAceitos: false,
+                instalando: false
+            },
+            methods: {
+                instalar() {
+                    this.instalando = true;
+                    window.open(authUrl, '_blank');
+                }
+            }
+        });
+        </script>        
+    </body>
+</html>
